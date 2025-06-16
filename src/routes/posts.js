@@ -7,6 +7,7 @@ router.use((req, res, next) => {
   next();
 });
 
+
 // GET /posts/:id
 router.get('/:id', (req, res) => {
   const { id } = req.params;
