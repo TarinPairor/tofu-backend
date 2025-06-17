@@ -25,7 +25,7 @@ const recommend = async (req, res) => {
     } catch (error) {
         console.error('Error in recommendation service:', error);
         res.status(500).json({ error: 'An error occurred while processing your request.' });
-    }
+    }   
 }
 
 module.exports = recommend;
