@@ -21,7 +21,7 @@ const recommend = async (req, res) => {
         state this clearly. Present your findings in a structured format with citations for all claims`;
 
         const response = await require_model(input, system_prompt);
-        res.status(200).json({ response });
+        res.status(200).json({ text: response.toString() }); // need to parse the response as a string
     } catch (error) {
         console.error('Error in recommendation service:', error);
         res.status(500).json({ error: 'An error occurred while processing your request.' });
