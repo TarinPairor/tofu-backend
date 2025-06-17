@@ -102,6 +102,11 @@ router.post('/', async (req, res) => {
         analysis: {
           sustainabilityCriticism: analysis.sustainabilityCriticism,
           alternativeProducts: analysis.alternativeProducts.slice(0, 3), // Limit to 3 alternatives
+          sustainabilityScore: (analysis.sustainabilityScore_materialsAndSourcing +
+            analysis.sustainabilityScore_productionAndManufacturing +
+            analysis.sustainabilityScore_distributionAndLogistics +
+            analysis.sustainabilityScore_productUse +
+            analysis.sustainabilityScore_endOfLifeManagement) / 5,
           sustainabilityScore_materialsAndSourcing : analysis.sustainabilityScore_materialsAndSourcing,
           sustainabilityScore_productionAndManufacturing : analysis.sustainabilityScore_productionAndManufacturing,
           sustainabilityScore_distributionAndLogistics : analysis.sustainabilityScore_distributionAndLogistics,
