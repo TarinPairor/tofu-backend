@@ -59,4 +59,4 @@ const evaluate = async (req, res) => {
     
 };
 
-export default evaluate;
+module.exports = evaluate;

@@ -1,9 +1,9 @@
 const express = require('express');
-const { request_model } = require('../utils/request_model');
+const evaluate = require('../controllers/evaluateController');
 
 const router = express.Router();
 
 // POST route example
-router.post('/evaluate', request_model);
+router.post('/evaluate', evaluate);
 
 module.exports = router;
