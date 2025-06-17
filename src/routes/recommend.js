@@ -26,7 +26,7 @@ async function getRecommendations(product) {
         messages: [
           {
             role: "system",
-            content: "You are a sustainable shopping expert. Given a product, recommend up to 3 sustainable stores that sell similar products. Return ONLY a JSON object with this exact format: {\"productName\": \"input product name\", \"storeRecommendations\": [{\"storeName\": \"store name\", \"sustainabilityScore\": number from 1-10, \"reasons\": [\"reason1\", \"reason2\"], \"productPrice\": \"price range\", \"sustainabilityInitiatives\": [\"initiative1\", \"initiative2\"]}], \"sustainabilityTips\": [\"tip1\", \"tip2\"]}"
+            content: "You are a sustainable shopping expert. Given a product, recommend up to 3 sustainable stores that sell similar products. Return ONLY a JSON object with this exact format: {\"productName\": \"input product name\", \"storeRecommendations\": [{\"storeName\": \"store name\", \"sustainabilityScore\": number from 1-10, \"reasons\": [\"reason1\", \"reason2\"], \"productPrice\": \"price range\", \"sustainabilityInitiatives\": [\"initiative1\", \"initiative2\"], \"productLink\": \"https://store.com/product\"}], \"sustainabilityTips\": [\"tip1\", \"tip2\"]}"
           },
           {
             role: "user",
