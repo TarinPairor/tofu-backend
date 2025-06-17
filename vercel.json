@@ -6,9 +6,15 @@
       "use": "@vercel/node"
     }
   ],
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/src/index.js" }
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "src/index.js"
+    }
   ],
+  "env": {
+    "SUPABASE_KEY": "@supabase_key"
+  },
     "headers": [
       {
       "source": "/(.*)",

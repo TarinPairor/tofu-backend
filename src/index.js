@@ -1,7 +1,7 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -10,7 +10,7 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
-
+//
 // Routes
 app.use('/', require('./routes/index'));
 app.use('/posts', require('./routes/posts'));
@@ -25,7 +25,11 @@ app.use('/add-product', addProductRouter);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  res.status(500).json({ 
+    success: false,
+    error: 'Something broke!',
+    details: err.message 
+  });
 });
 
 app.listen(port, () => {

@@ -6,6 +6,11 @@ const { scrapeContent } = require('../utils/scraper');
 // Initialize Supabase client
 const supabaseUrl = 'https://zbzioinhmaciqqskgejo.supabase.co';
 const supabaseKey = process.env.SUPABASE_KEY;
+
+if (!supabaseKey) {
+  throw new Error('SUPABASE_KEY environment variable is required');
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
