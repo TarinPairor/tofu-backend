@@ -50,7 +50,7 @@ const evaluate = async (req, res) => {
             throw new Error('Evaluation could not be determined.');
         }
 
-        res.status(201).json({ text: evaluation.toString() }); // change json format of response here
+        res.status(200).json({ text: evaluation.toString() }); // change json format of response here
 
     } catch (err) {
         console.error('Error during evaluation:', err);
