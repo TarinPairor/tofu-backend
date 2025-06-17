@@ -19,7 +19,10 @@ const system_prompts = [
     Strictly reply with only 'Good', 'Decent', or 'Bad'.`
 ]
 
-const evaluate = (input) => {
+
+const evaluate = async (req, res) => {
+    const input = req.body['url']; // Extracting the URL from the request body, follows json format for request
+
     // Function logic will go here
     if (!input || typeof input !== 'string') {
         throw new Error('Invalid input: Input must be a non-empty string.');
@@ -32,29 +35,27 @@ const evaluate = (input) => {
     // 1. Identify the company/store from the input URL
     // 2. Get the sustainability summary for the identified company/store
     // 3. Evaluate the sustainability summary and return the evaluation result
-    return request_model(input, system_prompts[0])
-        .then(company => {
-            if (!company) {
-                throw new Error('Company name could not be determined.');
-            }
-            return request_model(company, system_prompts[1]);
-        })
-        .then(sustainabilitySummary => {
-            if (!sustainabilitySummary) {
-                throw new Error('Sustainability summary could not be determined.');
-            }
-            return request_model(sustainabilitySummary, system_prompts[2]);
-        })
-        .then(evaluation => {
-            if (!evaluation) {
-                throw new Error('Evaluation could not be determined.');
-            }
-            return evaluation.toString();
-        })
-        .catch(err => {
-            console.error('Error during evaluation:', err);
-            throw err;
-        });
+    
+    try {
+        const company = await request_model(input, system_prompts[0]);
+        if (!company) {
+            throw new Error('Company name could not be determined.');
+        }
+        const sustainabilitySummary = await request_model(company, system_prompts[1]);
+        if (!sustainabilitySummary) {
+            throw new Error('Sustainability summary could not be determined.');
+        }
+        const evaluation = await request_model(sustainabilitySummary, system_prompts[2]);
+        if (!evaluation) {
+            throw new Error('Evaluation could not be determined.');
+        }
+
+        res.status(201).json({ text: evaluation.toString() }); // change json format of response here
+
+    } catch (err) {
+        console.error('Error during evaluation:', err);
+        res.status(500).json({ error: err.message });
+    }
     
 };
 

@@ -54,7 +54,7 @@ async function request_model (input, system_prompt) {
         messages=prompt,
     )
 
-    await response.then(res => {
+    return await response.then(res => {
         if (res.choices && res.choices.length > 0) {
             return res.choices[0].message.content;
         } else {
