@@ -15,6 +15,7 @@ app.use(morgan('dev'));
 app.use('/', require('./routes/index'));
 app.use('/posts', require('./routes/posts'));
 app.use('/scrape', require('./routes/scrape'));
+app.use('/eval', require('./routes/eval'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
