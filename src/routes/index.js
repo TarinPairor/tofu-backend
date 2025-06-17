@@ -13,9 +13,9 @@ router.get('/', (req, res) => {
 });
 
 // GET /:id
-router.get('/:id', (req, res) => {
-  const { id } = req.params;
-  res.json({ message: `Hello ${id}` });
-});
+// router.get('/:id', (req, res) => {
+//   const { id } = req.params;
+//   res.json({ message: `Hello ${id}` });
+// });
 
 module.exports = router; 
