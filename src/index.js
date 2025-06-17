@@ -15,7 +15,12 @@ app.use(morgan('dev'));
 app.use('/', require('./routes/index'));
 app.use('/posts', require('./routes/posts'));
 app.use('/scrape', require('./routes/scrape'));
-app.use('/eval', require('./routes/eval'));
+const evalRouter = require('./routes/eval');
+const addProductRouter = require('./routes/add-product');
+
+// Routes
+app.use('/eval', evalRouter);
+app.use('/add-product', addProductRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
