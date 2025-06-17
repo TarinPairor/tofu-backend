@@ -16,6 +16,7 @@ app.use('/', require('./routes/index'));
 app.use('/posts', require('./routes/posts'));
 app.use('/scrape', require('./routes/scrape'));
 app.use('/eval', require('./routes/eval'));
+app.use('/recommend', require('./routes/recommend'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -26,4 +27,4 @@ app.use((err, req, res, next) => {
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
   console.log(`Connect to http://localhost:${port}`)
-}); 
+});
