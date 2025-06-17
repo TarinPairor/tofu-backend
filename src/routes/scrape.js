@@ -9,11 +9,11 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    const content = await scrapeContent(url, process.env.OPENAI_API_KEY);
+    const content = await scrapeContent(url);
 
     res.json({
       success: true,
-      data: content
+      data: JSON.parse(content)  // Parse the JSON string back to an object
     });
 
   } catch (error) {
@@ -24,6 +24,13 @@ router.post('/', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Invalid URL format'
+      });
+    }
+
+    if (error.message === 'SONAR_API_KEY is required') {
+      return res.status(500).json({
+        success: false,
+        error: 'Server configuration error: Sonar API key not found'
       });
     }
 

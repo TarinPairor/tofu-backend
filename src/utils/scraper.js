@@ -1,110 +1,103 @@
-const cheerio = require('cheerio');
-const { OpenAI } = require('openai');
-const { Builder } = require('selenium-webdriver');
-const chrome = require('selenium-webdriver/chrome');
-const { By, until } = require('selenium-webdriver');
+const fetch = require('node-fetch');
 
 /**
- * Extracts text content from HTML
- * @param {string} html - Raw HTML content
- * @returns {string} Raw text content
+ * Gets Perplexity's interpretation of the content
+ * @param {string} url - URL to analyze
+ * @returns {Promise<string>} Perplexity's response
  */
-function extractTextFromHtml(html) {
-  const $ = cheerio.load(html);
-  
-  // Remove script and style elements
-  $('script, style').remove();
-  
-  // Get all text content
-  const text = $('body').text().trim();
-  
-  // Limit to approximately 2000 tokens (about 8000 characters)
-  return text.substring(0, 8000);
-}
-
-/**
- * Gets GPT's interpretation of the content
- * @param {string} textContent - Text content to analyze
- * @param {OpenAI} openai - Initialized OpenAI client
- * @returns {Promise<string>} GPT's response
- */
-async function analyzeContent(textContent, openai) {
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content: "Given this webpage content which contains a product give me the product name, the description and key features of the product."
-      },
-      {
-        role: "user",
-        content: textContent
-      }
-    ],
-    max_tokens: 1000
-  });
-
-  return completion.choices[0].message.content;
-}
-
-/**
- * Fetches content from a URL using Selenium WebDriver
- * @param {string} url - URL to fetch
- * @returns {Promise<string>} HTML content
- */
-async function fetchWithSelenium(url) {
-  // Configure Chrome options
-  const options = new chrome.Options();
-  options.addArguments(
-    '--headless',
-    '--no-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-gpu',
-    '--window-size=1920,1080'
-  );
-
-  const driver = await new Builder()
-    .forBrowser('chrome')
-    .setChromeOptions(options)
-    .build();
+async function analyzeContent(url) {
+  const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
+  if (!perplexityApiKey) {
+    throw new Error('PERPLEXITY_API_KEY is required');
+  }
 
   try {
-    // Navigate to the URL with a generous timeout
-    await driver.get(url);
+    const options = {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${perplexityApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: "sonar",
+        messages: [
+          {
+            role: "system",
+            content: "Extract product information from the URL. Return ONLY a JSON object in this exact format without any additional text or formatting: {\"productName\": \"name\", \"description\": \"desc\", \"features\": [\"feature1\"]}"
+          },
+          {
+            role: "user",
+            content: url
+          }
+        ]
+      })
+    };
 
-    // Check if it's a Shopee page by looking for loading dots
-    try {
-      const loadingDot = await driver.findElement(By.css('circle.loading-dot'));
-      if (loadingDot) {
-        // Wait until loading dots disappear (page fully loaded)
-        await driver.wait(until.stalenessOf(loadingDot), 10000);
-      }
-    } catch (e) {
-      // Not a Shopee page or no loading dots found, continue with normal loading
-      await driver.executeScript('return new Promise(resolve => {' +
-        'if (document.readyState === "complete") resolve();' +
-        'else window.addEventListener("load", resolve);' +
-      '})');
+    const response = await fetch('https://api.perplexity.ai/chat/completions', options);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
-    // Give a short delay for any final JavaScript execution
-    await driver.sleep(1500);
+    const data = await response.json();
+    
+    // Log the full response for debugging
+    console.log('Raw API Response:', data);
 
-    // Get the raw page source
-    return await driver.getPageSource();
+    // Extract the content from the response
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid API response structure:', data);
+      throw new Error('Invalid API response structure');
+    }
 
-  } finally {
-    await driver.quit();
+    let content = data.choices[0].message.content;
+    console.log('Raw content:', content);
+
+    // Clean up the content
+    content = content
+      .replace(/```json\s*|\s*```/g, '') // Remove code blocks
+      .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
+      .replace(/\n/g, '') // Remove newlines
+      .trim();
+
+    console.log('Cleaned content:', content);
+
+    // Try to parse the response content as JSON
+    try {
+      const parsedContent = JSON.parse(content);
+
+      // Validate the structure
+      if (!parsedContent.productName || !parsedContent.description || !Array.isArray(parsedContent.features)) {
+        console.error('Invalid response structure:', parsedContent);
+        throw new Error('Response missing required fields');
+      }
+
+      // Format the response
+      const formattedResponse = {
+        productName: parsedContent.productName,
+        description: parsedContent.description,
+        features: parsedContent.features
+      };
+
+      return JSON.stringify(formattedResponse);
+    } catch (parseError) {
+      console.error('Parse error details:', parseError);
+      console.error('Failed content:', content);
+      throw new Error(`Failed to parse JSON: ${parseError.message}`);
+    }
+  } catch (error) {
+    console.error('API error details:', error);
+    throw error;
   }
 }
 
 /**
- * Main function to scrape and analyze content from a URL
- * @param {string} url - URL to scrape
- * @param {string} apiKey - OpenAI API key
+ * Main function to analyze content from a URL
+ * @param {string} url - URL to analyze
  * @returns {Promise<string>} Analysis of the content
  */
-async function scrapeContent(url, apiKey) {
+async function scrapeContent(url) {
   // Validate URL
   try {
     new URL(url);
@@ -112,21 +105,11 @@ async function scrapeContent(url, apiKey) {
     throw new Error('Invalid URL format');
   }
 
-  // Initialize OpenAI
-  const openai = new OpenAI({ apiKey });
-
   try {
-    // Fetch webpage content using Selenium
-    const html = await fetchWithSelenium(url);
-
-    // Extract text content
-    const textContent = extractTextFromHtml(html);
-
-    // Get GPT's analysis
-    return await analyzeContent(textContent, openai);
+    return await analyzeContent(url);
   } catch (error) {
     console.error('Scraping error:', error);
-    throw new Error(`Failed to scrape content: ${error.message}`);
+    throw new Error(`Failed to analyze content: ${error.message}`);
   }
 }
 
