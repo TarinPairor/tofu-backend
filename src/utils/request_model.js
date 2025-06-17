@@ -1,6 +1,5 @@
+const axios = require('axios');
 require('dotenv').config();
-const fetch = require('node-fetch');
-const { options } = require('../routes');
 
 
 /**
@@ -13,63 +12,47 @@ const { options } = require('../routes');
  * @throws {Error} If API_KEY is not defined in environment variables
  * @throws {Error} If no response is received from the model
  * @throws {Error} If there's an error during the API request
- * 
- * @requires dotenv
- * @requires openai
- * 
- * @example
- * const response = await request_model(
- *   "What is the capital of France?",
- *   "You are a helpful assistant."
- * );
  */
 async function request_model (input, system_prompt) {
-    // Define api_key, base_url and model_name from environment variables
     const apiKey = process.env.API_KEY;
-    const base_url = process.env.BASE_URL || "https://api.perplexity.ai";
-    const model_name = process.env.MODEL_NAME || "sonar-pro";
+    const baseUrl = process.env.BASE_URL || "https://api.perplexity.ai";
+    const modelName = process.env.MODEL_NAME || "sonar-pro";
 
     if (!apiKey) {
         throw new Error('API_KEY is not defined in the environment variables');
     }
 
-    const prompt = {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: "sonar",
-        messages: [
-          {
-            role: "system",
-            content: system_prompt
-          },
-          {
-            role: "user",
-            content: input
-          }
-        ]
-      })
-    };
+    try {
+        const response = await axios.post(`${baseUrl}/chat/completions`, {
+            model: modelName,
+            messages: [
+                {
+                    role: "system",
+                    content: system_prompt
+                },
+                {
+                    role: "user",
+                    content: input
+                }
+            ]
+        }, {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            }
+        });
 
-    const response = await fetch(`${base_url}/v1/chat/completions`, prompt);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`);
+        if (response.data.choices && response.data.choices.length > 0) {
+            return response.data.choices[0].message.content;
+        } else {
+            throw new Error('No response from the model');
+        }
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`API error: ${error.response.status} - ${error.response.data}`);
+        }
+        throw error;
     }
-
-
-    const data = await response.json();
-    
-    if (data.choices && data.choices.length > 0) {
-        return data.choices[0].message.content;
-    } else {
-        throw new Error('No response from the model');
-    }
-
-};
+}
 
 module.exports = request_model;
