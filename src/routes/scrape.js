@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { scrapeProductInfo } = require('../utils/scraper');
+const { scrapeContent } = require('../utils/scraper');
 
 router.post('/', async (req, res) => {
   try {
@@ -9,11 +9,11 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    const productInfo = await scrapeProductInfo(url, process.env.OPENAI_API_KEY);
+    const content = await scrapeContent(url, process.env.OPENAI_API_KEY);
 
     res.json({
       success: true,
-      data: productInfo
+      data: content
     });
 
   } catch (error) {
