@@ -26,7 +26,7 @@ async function analyzeProduct(productInfo) {
         messages: [
           {
             role: "system",
-            content: "You are a sustainable fashion expert. Analyze the product and return ONLY a JSON object with the following structure: {\"sustainabilityCriticism\": [{\"criticism\": \"criticism text\", \"citation\": \"source URL\", \"citation_number\": number}], \"alternativeProducts\": [{\"name\": \"product name\", \"reason\": \"why it's more sustainable\", \"citation\": \"source URL\", \"citation_number\": number, \"product_link\": \"URL to purchase\"}], \"sustainabilityScore\": number from 1-10, \"recommendations\": [{\"recommendation\": \"recommendation text\", \"citation\": \"source URL\", \"citation_number\": number}]}"
+            content: "You are a sustainable fashion expert. Analyze the product and return ONLY a JSON object with the following structure: {\"sustainabilityCriticism\": [{\"criticism\": \"criticism text\", \"citation\": \"source URL\", \"citation_number\": number}], \"alternativeProducts\": [{\"name\": \"product name\", \"reason\": \"why it's more sustainable\", \"citation\": \"source URL\", \"citation_number\": number, \"product_link\": \"URL to purchase\"}], \"sustainabilityScore_materialsAndSourcing\": number from 1-10, \"sustainabilityScore_productionAndManufacturing\": number from 1-10, \"sustainabilityScore_distributionAndLogistics\": number from 1-10, \"sustainabilityScore_productUse\": number from 1-10, \"sustainabilityScore_endOfLifeManagement\": number from 1-10, \"recommendations\": [{\"recommendation\": \"recommendation text\", \"citation\": \"source URL\", \"citation_number\": number}]}"
           },
           {
             role: "user",
@@ -58,15 +58,17 @@ async function analyzeProduct(productInfo) {
 
     const analysis = JSON.parse(content);
 
+    console.log('Analysis result:', analysis);
     // Validate the analysis structure
     if (!analysis.sustainabilityCriticism || !analysis.alternativeProducts || 
-        !analysis.sustainabilityScore || !analysis.recommendations ||
+        !analysis.sustainabilityScore_materialsAndSourcing || 
+        !analysis.sustainabilityScore_productionAndManufacturing || 
+        !analysis.sustainabilityScore_distributionAndLogistics || 
+        !analysis.sustainabilityScore_productUse || 
+        !analysis.sustainabilityScore_endOfLifeManagement || !analysis.recommendations ||
         !analysis.sustainabilityCriticism[0]?.citation ||
         !analysis.alternativeProducts[0]?.citation ||
         !analysis.recommendations[0]?.citation ||
-        !analysis.sustainabilityCriticism[0]?.citation_number ||
-        !analysis.alternativeProducts[0]?.citation_number ||
-        !analysis.recommendations[0]?.citation_number ||
         !analysis.alternativeProducts[0]?.product_link) {
       throw new Error('Invalid analysis format');
     }
@@ -100,7 +102,11 @@ router.post('/', async (req, res) => {
         analysis: {
           sustainabilityCriticism: analysis.sustainabilityCriticism,
           alternativeProducts: analysis.alternativeProducts.slice(0, 3), // Limit to 3 alternatives
-          sustainabilityScore: analysis.sustainabilityScore,
+          sustainabilityScore_materialsAndSourcing : analysis.sustainabilityScore_materialsAndSourcing,
+          sustainabilityScore_productionAndManufacturing : analysis.sustainabilityScore_productionAndManufacturing,
+          sustainabilityScore_distributionAndLogistics : analysis.sustainabilityScore_distributionAndLogistics,
+          sustainabilityScore_productUse : analysis.sustainabilityScore_productUse,
+          sustainabilityScore_endOfLifeManagement : analysis.sustainabilityScore_endOfLifeManagement,
           recommendations: analysis.recommendations
         }
       }
