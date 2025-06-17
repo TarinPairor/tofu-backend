@@ -26,7 +26,7 @@ async function analyzeProduct(productInfo) {
         messages: [
           {
             role: "system",
-            content: "You are a sustainable fashion expert. Analyze the product and return ONLY a JSON object with the following structure: {\"sustainabilityCriticism\": [\"criticism1\", \"criticism2\", ...], \"alternativeProducts\": [{\"name\": \"product name\", \"reason\": \"why it's more sustainable\"}], \"sustainabilityScore\": number from 1-10, \"recommendations\": [\"recommendation1\", \"recommendation2\", ...]}"
+            content: "You are a sustainable fashion expert. Analyze the product and return ONLY a JSON object with the following structure: {\"sustainabilityCriticism\": [{\"criticism\": \"criticism text\", \"citation\": \"source URL\", \"citation_number\": number}], \"alternativeProducts\": [{\"name\": \"product name\", \"reason\": \"why it's more sustainable\", \"citation\": \"source URL\", \"citation_number\": number, \"product_link\": \"URL to purchase\"}], \"sustainabilityScore\": number from 1-10, \"recommendations\": [{\"recommendation\": \"recommendation text\", \"citation\": \"source URL\", \"citation_number\": number}]}"
           },
           {
             role: "user",
@@ -60,7 +60,14 @@ async function analyzeProduct(productInfo) {
 
     // Validate the analysis structure
     if (!analysis.sustainabilityCriticism || !analysis.alternativeProducts || 
-        !analysis.sustainabilityScore || !analysis.recommendations) {
+        !analysis.sustainabilityScore || !analysis.recommendations ||
+        !analysis.sustainabilityCriticism[0]?.citation ||
+        !analysis.alternativeProducts[0]?.citation ||
+        !analysis.recommendations[0]?.citation ||
+        !analysis.sustainabilityCriticism[0]?.citation_number ||
+        !analysis.alternativeProducts[0]?.citation_number ||
+        !analysis.recommendations[0]?.citation_number ||
+        !analysis.alternativeProducts[0]?.product_link) {
       throw new Error('Invalid analysis format');
     }
 

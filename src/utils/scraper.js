@@ -9,7 +9,7 @@ async function analyzeContent(url) {
   const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
   if (!perplexityApiKey) {
     throw new Error('PERPLEXITY_API_KEY is required');
-  }
+}
 
   try {
     const options = {
@@ -20,15 +20,15 @@ async function analyzeContent(url) {
       },
       body: JSON.stringify({
         model: "sonar",
-        messages: [
-          {
-            role: "system",
+    messages: [
+      {
+        role: "system",
             content: "Extract product information from the URL. Return ONLY a JSON object in this exact format without any additional text or formatting: {\"productName\": \"name\", \"description\": \"desc\", \"features\": [\"feature1\"]}"
-          },
-          {
-            role: "user",
+      },
+      {
+        role: "user",
             content: url
-          }
+      }
         ]
       })
     };
@@ -59,13 +59,26 @@ async function analyzeContent(url) {
       .replace(/```json\s*|\s*```/g, '') // Remove code blocks
       .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
       .replace(/\n/g, '') // Remove newlines
+      .replace(/,\s*}/g, '}') // Remove trailing commas
+      .replace(/,\s*]/g, ']') // Remove trailing commas in arrays
       .trim();
 
     console.log('Cleaned content:', content);
 
     // Try to parse the response content as JSON
     try {
-      const parsedContent = JSON.parse(content);
+      // First try direct parse
+      let parsedContent;
+      try {
+        parsedContent = JSON.parse(content);
+      } catch (initialParseError) {
+        // If direct parse fails, try to extract JSON object
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('No valid JSON object found in response');
+        }
+        parsedContent = JSON.parse(jsonMatch[0]);
+      }
 
       // Validate the structure
       if (!parsedContent.productName || !parsedContent.description || !Array.isArray(parsedContent.features)) {
