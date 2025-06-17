@@ -1,5 +1,8 @@
 const cheerio = require('cheerio');
 const { OpenAI } = require('openai');
+const { Builder } = require('selenium-webdriver');
+const chrome = require('selenium-webdriver/chrome');
+const { By, until } = require('selenium-webdriver');
 
 /**
  * Extracts text content from HTML
@@ -16,7 +19,6 @@ function extractTextFromHtml(html) {
   const text = $('body').text().trim();
   
   // Limit to approximately 2000 tokens (about 8000 characters)
-  // This ensures we stay well under the 10000 token limit while leaving room for the response
   return text.substring(0, 8000);
 }
 
@@ -39,10 +41,61 @@ async function analyzeContent(textContent, openai) {
         content: textContent
       }
     ],
-    max_tokens: 1000 // Limit response size
+    max_tokens: 1000
   });
 
   return completion.choices[0].message.content;
+}
+
+/**
+ * Fetches content from a URL using Selenium WebDriver
+ * @param {string} url - URL to fetch
+ * @returns {Promise<string>} HTML content
+ */
+async function fetchWithSelenium(url) {
+  // Configure Chrome options
+  const options = new chrome.Options();
+  options.addArguments(
+    '--headless',
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu',
+    '--window-size=1920,1080'
+  );
+
+  const driver = await new Builder()
+    .forBrowser('chrome')
+    .setChromeOptions(options)
+    .build();
+
+  try {
+    // Navigate to the URL with a generous timeout
+    await driver.get(url);
+
+    // Check if it's a Shopee page by looking for loading dots
+    try {
+      const loadingDot = await driver.findElement(By.css('circle.loading-dot'));
+      if (loadingDot) {
+        // Wait until loading dots disappear (page fully loaded)
+        await driver.wait(until.stalenessOf(loadingDot), 10000);
+      }
+    } catch (e) {
+      // Not a Shopee page or no loading dots found, continue with normal loading
+      await driver.executeScript('return new Promise(resolve => {' +
+        'if (document.readyState === "complete") resolve();' +
+        'else window.addEventListener("load", resolve);' +
+      '})');
+    }
+
+    // Give a short delay for any final JavaScript execution
+    await driver.sleep(1500);
+
+    // Get the raw page source
+    return await driver.getPageSource();
+
+  } finally {
+    await driver.quit();
+  }
 }
 
 /**
@@ -62,15 +115,19 @@ async function scrapeContent(url, apiKey) {
   // Initialize OpenAI
   const openai = new OpenAI({ apiKey });
 
-  // Fetch webpage content
-  const response = await fetch(url);
-  const html = await response.text();
+  try {
+    // Fetch webpage content using Selenium
+    const html = await fetchWithSelenium(url);
 
-  // Extract text content
-  const textContent = extractTextFromHtml(html);
+    // Extract text content
+    const textContent = extractTextFromHtml(html);
 
-  // Get GPT's analysis
-  return await analyzeContent(textContent, openai);
+    // Get GPT's analysis
+    return await analyzeContent(textContent, openai);
+  } catch (error) {
+    console.error('Scraping error:', error);
+    throw new Error(`Failed to scrape content: ${error.message}`);
+  }
 }
 
 module.exports = {
