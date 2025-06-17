@@ -1,5 +1,6 @@
 require('dotenv').config();
-const openai = require('openai');
+const fetch = require('node-fetch');
+const { options } = require('../routes');
 
 
 /**
@@ -32,38 +33,42 @@ async function request_model (input, system_prompt) {
         throw new Error('API_KEY is not defined in the environment variables');
     }
 
-    client = new openai.OpenAI({
-        apiKey: apiKey,
-        base_url: base_url,
-        timeout: 10000, // 10 seconds client will wait for a response
-    });
+    const prompt = {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: "sonar",
+        messages: [
+          {
+            role: "system",
+            content: system_prompt
+          },
+          {
+            role: "user",
+            content: input
+          }
+        ]
+      })
+    };
+
+    const response = await fetch(`${base_url}/v1/chat/completions`, prompt);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+
+    const data = await response.json();
     
-    const prompt = [
-        {
-            "role": "system",
-            "content": system_prompt
-        },
-        {   
-            "role": "user",
-            "content": input
-        }
-    ];
-
-    response = client.chat.completions.create(
-        model=model_name,
-        messages=prompt,
-    )
-
-    return await response.then(res => {
-        if (res.choices && res.choices.length > 0) {
-            return res.choices[0].message.content;
-        } else {
-            throw new Error('No response from the model');
-        }
-    }).catch(err => {
-        console.error('Error during API request:', err);
-        throw err;
-    });
+    if (data.choices && data.choices.length > 0) {
+        return data.choices[0].message.content;
+    } else {
+        throw new Error('No response from the model');
+    }
 
 };
 

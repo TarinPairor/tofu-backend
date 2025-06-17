@@ -4,6 +4,6 @@ const recommend = require('../controllers/recommendController');
 const router = express.Router();
 
 // POST route example
-router.post('/recommend', recommend);
+router.post('/', recommend);
 
 module.exports = router;
